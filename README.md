@@ -14,7 +14,7 @@ deploying AWS resources providing the 100% serverless backend
 for the mobile app.
 
 Northstrat created CloudFormation templates for creating all AWS
-resources for the the production deployment environment.
+resources for the production deployment environment.
 
 ### Template Descriptions
 
