@@ -1,6 +1,6 @@
 # Northstrat, Inc. Platform One BOA Oral Presentation Portfolio Review Materials
 
-## Northstrat Mobile App Cloud Formation Template
+## Northstrat Mobile App Cloud Formation Templates
 
 ### Overview
 
