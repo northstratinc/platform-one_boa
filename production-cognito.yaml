@@ -1,0 +1,197 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "mobileapp : Cognito resources"
+
+Parameters:
+    app:
+        Type: String
+        Description: Application Name
+    env:
+        Type: String
+        Description: Deployment environment
+    s3deploymentstack:
+        Type: String
+        Description: The s3 Bucket configuration for deployment
+
+Resources:
+    # User Pool definition
+    UserPool:
+        Type: "AWS::Cognito::UserPool"
+        Properties:
+            UserPoolName: !Sub ${env}Northstrat
+            UserPoolTags:
+                environment: !Sub ${env}
+            AutoVerifiedAttributes:
+                - email
+            UsernameAttributes:
+                - email
+            EmailVerificationMessage: "<h3>Your Northstrat confirmation code is</h3><h1>{####}</h1>"
+            EmailVerificationSubject: "Northstrat: User Confirmation Code"
+            Schema:
+                -
+                    Name: birthdate
+                    AttributeDataType: String
+                    Mutable: true
+                    Required: false
+                -
+                    Name: email
+                    AttributeDataType: String
+                    Mutable: true
+                    Required: true
+                -
+                    Name: family_name
+                    AttributeDataType: String
+                    Mutable: true
+                    Required: true
+                -
+                    Name: given_name
+                    AttributeDataType: String
+                    Mutable: true
+                    Required: true
+
+    # Unauthorized role
+    CognitoUnAuthorizedRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            RoleName: !Sub ${app}${env}CognitoUnAuthorizedRole
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    -
+                        Effect: "Allow"
+                        Principal:
+                            Federated: "cognito-identity.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRoleWithWebIdentity"
+            Policies:
+                -
+                    PolicyName: "CognitoUnauthorizedPolicy"
+                    PolicyDocument:
+                        Version: "2012-10-17"
+                        Statement:
+                            -
+                                Effect: "Allow"
+                                Action:
+                                    - "mobileanalytics:PutEvents"
+                                    - "cognito-sync:*"
+                                Resource: "*"
+
+    # Authorized role
+    CognitoAuthorizedRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            RoleName: !Sub ${app}${env}CognitoAuthorizedRole
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    -
+                        Effect: "Allow"
+                        Principal:
+                            Federated: "cognito-identity.amazonaws.com"
+                            Service:
+                                - "lambda.amazonaws.com"
+                                - "apigateway.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRoleWithWebIdentity"
+                            - "sts:AssumeRole"
+            Policies:
+                -
+                    PolicyName: "CognitoAuthorizedPolicy"
+                    PolicyDocument:
+                        Version: "2012-10-17"
+                        Statement:
+                            -
+                                Effect: "Allow"
+                                Action:
+                                    - "mobileanalytics:PutEvents"
+                                    - "cognito-sync:*"
+                                    - "cognito-identity:*"
+                                    - "apigateway:*"
+                                Resource: "*"
+                            -
+                                Effect: "Allow"
+                                # TODO: Need to figure out 'Action' applies to the application making the call to Cognito or is it checking the JWT
+                                Action:
+                                    - "lambda:InvokeFunction"
+                                Resource: "*"
+
+    # Application credentials that interact with the client
+    # TODO: Is it ok to use a single client credentials for multiple server-side applications?
+    UserPoolClient:
+        Type: "AWS::Cognito::UserPoolClient"
+        Properties:
+            ClientName: !Sub ${env}UserPoolClient
+            ExplicitAuthFlows:
+                - USER_PASSWORD_AUTH
+            GenerateSecret: false
+            UserPoolId: !Ref UserPool
+
+    #User Groups
+    AdminGroup:
+        Type: AWS::Cognito::UserPoolGroup
+        Properties: 
+            Description: Northstrat Administrators group
+            GroupName: Administrators
+            RoleArn: !GetAtt [ CognitoAuthorizedRole, Arn ]
+            UserPoolId: !Ref UserPool
+
+    EmployeeGroup:
+        Type: AWS::Cognito::UserPoolGroup
+        Properties: 
+            Description: Northstrat Employees group
+            GroupName: Employees
+            RoleArn: !GetAtt [ CognitoAuthorizedRole, Arn ]
+            UserPoolId: !Ref UserPool
+
+    AllHandsGroup:
+        Type: AWS::Cognito::UserPoolGroup
+        Properties: 
+            Description: Group for all registered users
+            GroupName: All
+            RoleArn: !GetAtt [ CognitoAuthorizedRole, Arn ]
+            UserPoolId: !Ref UserPool
+
+    VirginiaGroup:
+        Type: AWS::Cognito::UserPoolGroup
+        Properties: 
+            Description: Northstrat Virginia Employees group
+            GroupName: Virginia
+            RoleArn: !GetAtt [ CognitoAuthorizedRole, Arn ]
+            UserPoolId: !Ref UserPool
+
+    ColoradoGroup:
+        Type: AWS::Cognito::UserPoolGroup
+        Properties: 
+            Description: Northstrat Employees group
+            GroupName: Colorado
+            RoleArn: !GetAtt [ CognitoAuthorizedRole, Arn ]
+            UserPoolId: !Ref UserPool
+
+Outputs:
+    UserPoolArn:
+        Value: !GetAtt [ UserPool, Arn ]
+        Description: "User Pool ARN"
+        Export:
+            Name: !Sub '${app}${env}-UserPoolArn'
+    UserPoolId:
+        Value: !Ref UserPool
+        Description: "The application User Pool"
+        Export:
+            Name: !Sub '${app}${env}-UserPoolId'
+    UserPoolClientId:
+        Value: !Ref UserPoolClient
+        Description: "Application credentials for User Pool"
+        Export:
+            Name: !Sub '${app}${env}-UserPoolClientId'
+    CognitoUnAuthorizedRole:
+        Value: !Ref CognitoUnAuthorizedRole
+        Description: "Cognito Unauthorized role"
+        Export:
+            Name: !Sub '${AWS::StackName}-CogitoUnAuthorizedRole'
+    CognitoAuthorizedRoleId:
+        Value: !Ref CognitoAuthorizedRole
+        Description: "Cognito Authorized role"
+        Export:
+            Name: !Sub '${app}${env}-CogitoAuthorizedRole'
+    CognitoPublicKey:
+        Value: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}/.well-known/jwks.json"
+        Description: Cognito public json web keys

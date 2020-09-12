@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "mobileapp : AWS Stack"
+
+Parameters:
+    app:
+        Type: String
+        Default: mobileapp
+        Description: Application Name
+    env:
+        Type: String
+        Description: mobileapp deployment environment
+    Origin:
+        Type: String
+        Default: "*"
+        Description: The expected web application origin
+    s3deploymentstack:
+        Type: String
+        Description: The s3 Bucket configuration for deployment
+
+    # Parameters for Notification
+    notificationdatabaseTemplate:
+        Type: String
+        Description: Notification Database stack URL
+
+    # Parameters for Directory
+    directorydatabaseTemplate:
+        Type: String
+        Description: Directory Database stack URL
+
+    # Parameters for Calendar
+    calendardatabaseTemplate:
+        Type: String
+        Description: Calendar Database stack URL
+
+    # Parameters for Media
+    mediadatabaseTemplate:
+        Type: String
+        Description: Template URL for Media S3 Bucket
+
+#
+# Resources
+
+Resources:
+#
+    CalendarDatabaseStack:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: !Sub ${calendardatabaseTemplate}
+            Tags:
+                -
+                    Key: "application"
+                    Value: !Sub ${app}
+                -
+                    Key: "environment"
+                    Value: !Sub ${env}
+            Parameters:
+                app: !Sub ${app}
+                env: !Sub ${env}
+
+#
+    DirectoryDatabaseStack:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: !Sub ${directorydatabaseTemplate}
+            Tags:
+                -
+                    Key: "application"
+                    Value: !Sub ${app}
+                -
+                    Key: "environment"
+                    Value: !Sub ${env}
+            Parameters:
+                app: !Sub ${app}
+                env: !Sub ${env}
+
+#
+    MediaDatabaseStack:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: !Sub ${mediadatabaseTemplate}
+            Tags:
+                -
+                    Key: "application"
+                    Value: !Sub ${app}
+                -
+                    Key: "environment"
+                    Value: !Sub ${env}
+            Parameters:
+                app: !Sub ${app}
+                env: !Sub ${env}
+
+#
+    NotificationDatabaseStack:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: !Sub ${notificationdatabaseTemplate}
+            Tags:
+                -
+                    Key: "application"
+                    Value: !Sub ${app}
+                -
+                    Key: "environment"
+                    Value: !Sub ${env}
+            Parameters:
+                app: !Sub ${app}
+                env: !Sub ${env}
