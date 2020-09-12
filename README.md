@@ -2,12 +2,14 @@
 
 ## Northstrat Mobile App Cloud Formation Template
 
-Northstrat uses a mobile app as one channel for internal corporate 
-communications.
+Northstrat has created a mobile app that is one of multiple
+internal corporate communications channels (including email, Microsoft
+Teams, etc.).
 
-CloudFormation is an AWS-specific Infrastructure as Code (IaC) tool 
-that can be used to create and deploy AWS resources.
+The mobile app development team leveraged AWS CloudFormation, an 
+AWS-specific Infrastructure as Code (IaC) tool for creating and 
+deploying AWS resources.
 
 Northstrat created CloudFormation templates for creating all AWS
-resources for two isolated AWS environments used for the app 
-development: test, and production.
+resources for the two isolated mobile app environments: test and
+production.
